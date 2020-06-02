@@ -1,0 +1,31 @@
+# IDE related file
+.idea/
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Executable files
+cmd/bootnode/bootnode
+cmd/dpeth/dpeth
+cmd/dpeth/dpeth_browser
+cmd/puppeth/puppeth
+tests/tps/tps
+tests/sc/sc
+bin/
+_workspace/
+
+.vscode
+
+.env
+docker-compose.yaml
+data

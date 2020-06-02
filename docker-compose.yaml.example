@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  chain:
+    restart: always
+    image: ${repo_url}/${app}:${tag}
+    container_name: "chain"
+    env_file:
+      - ".env"
+    ports:
+      - "18545:8545"
+      - "10303:30303/udp"
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - ./data/:/root/.dpeth
+
+    # for masternode use, will mining
+    entrypoint: 
+      - bash 
+      - -c
+      - |
+        /app/init.sh && /app/${app} --syncmode 'full' --rpc --rpcaddr 0.0.0.0 --rpcport 8545 --rpccorsdomain '*' --rpcapi 'personal,db,eth,net,web3,txpool,miner,net,alien,admin' --bootnodes ${bootnode} --mine --port 30303 -unlock 'a01de9b9e83adb3496fba2e4161238f2ba31cce0' --password /root/.dpeth/pass --verbosity 5
+
+
+    # for common node use.
+    # entrypoint: 
+    #   - bash 
+    #   - -c
+    #   - |
+    #     /app/init.sh && /app/${app} --syncmode 'full' --rpc --rpcaddr 0.0.0.0 --rpcport 8545 --rpccorsdomain '*' --rpcapi 'personal,db,eth,net,web3,txpool,miner,net,alien' --bootnodes ${bootnode}
