@@ -27,10 +27,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/eeefan/dpeth/log"
 	"github.com/eeefan/dpeth/node"
 	"github.com/eeefan/dpeth/p2p/discover"
+	"github.com/docker/docker/pkg/reexec"
 )
 
 // DockerAdapter is a NodeAdapter which runs simulation nodes inside Docker

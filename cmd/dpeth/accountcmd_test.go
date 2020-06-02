@@ -17,13 +17,12 @@
 package main
 
 import (
+	"github.com/eeefan/dpeth/common/hexutil"
 	"io/ioutil"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/eeefan/dpeth/common/hexutil"
 
 	"github.com/cespare/cp"
 )

@@ -21,13 +21,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/eeefan/dpeth/common"
 	"github.com/eeefan/dpeth/consensus/ethash"
 	"github.com/eeefan/dpeth/core/rawdb"
 	"github.com/eeefan/dpeth/core/vm"
 	"github.com/eeefan/dpeth/ethdb"
 	"github.com/eeefan/dpeth/params"
+	"github.com/davecgh/go-spew/spew"
 )
 
 func TestDefaultGenesisBlock(t *testing.T) {

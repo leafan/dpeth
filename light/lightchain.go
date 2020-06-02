@@ -19,12 +19,11 @@ package light
 import (
 	"context"
 	"errors"
+	"github.com/eeefan/dpeth/consensus/alien"
 	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/eeefan/dpeth/consensus/alien"
 
 	"github.com/eeefan/dpeth/common"
 	"github.com/eeefan/dpeth/consensus"
@@ -37,6 +36,7 @@ import (
 	"github.com/eeefan/dpeth/log"
 	"github.com/eeefan/dpeth/params"
 	"github.com/eeefan/dpeth/rlp"
+	"github.com/hashicorp/golang-lru"
 )
 
 var (

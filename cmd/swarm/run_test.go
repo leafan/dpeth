@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/eeefan/dpeth/accounts"
 	"github.com/eeefan/dpeth/accounts/keystore"
 	"github.com/eeefan/dpeth/internal/cmdtest"
@@ -34,6 +33,7 @@ import (
 	"github.com/eeefan/dpeth/p2p"
 	"github.com/eeefan/dpeth/rpc"
 	"github.com/eeefan/dpeth/swarm"
+	"github.com/docker/docker/pkg/reexec"
 )
 
 func init() {

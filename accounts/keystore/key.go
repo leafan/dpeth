@@ -22,14 +22,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/eeefan/dpeth/common/hexutil"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/eeefan/dpeth/common/hexutil"
 
 	"github.com/eeefan/dpeth/accounts"
 	"github.com/eeefan/dpeth/common"

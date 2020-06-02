@@ -17,12 +17,11 @@
 package main
 
 import (
+	"github.com/eeefan/dpeth/common/hexutil"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/eeefan/dpeth/common/hexutil"
 )
 
 func TestMessageSignVerify(t *testing.T) {
@@ -42,7 +41,7 @@ func TestMessageSignVerify(t *testing.T) {
 Passphrase: {{.InputLine "foobar"}}
 Repeat passphrase: {{.InputLine "foobar"}}
 `)
-	_, matches := generate.ExpectRegexp(`Address: (` + hexutil.CustomHexPrefix + `[0-9a-fA-F]{40})\n`)
+	_, matches := generate.ExpectRegexp(`Address: (`+hexutil.CustomHexPrefix +`[0-9a-fA-F]{40})\n`)
 	address := matches[1]
 	generate.ExpectExit()
 
@@ -61,7 +60,7 @@ Passphrase: {{.InputLine "foobar"}}
 	_, matches = verify.ExpectRegexp(`
 Signature verification successful!
 Recovered public key: [0-9a-f]+
-Recovered address: (` + hexutil.CustomHexPrefix + `[0-9a-fA-F]{40})
+Recovered address: (`+hexutil.CustomHexPrefix +`[0-9a-fA-F]{40})
 `)
 	recovered := matches[1]
 	verify.ExpectExit()

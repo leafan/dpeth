@@ -69,7 +69,7 @@ Function GetInstalledSize
 FunctionEnd
 
 # Write registry, Windows uses these values in various tools such as add/remove program.
-# PowerShell: Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, InstallLocation, InstallDate | Format-Table â€“AutoSize
+# PowerShell: Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, InstallLocation, InstallDate | Format-Table –AutoSize
 function .onInstSuccess
   # Save information in registry in HKEY_LOCAL_MACHINE branch, Windows add/remove functionality depends on this
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GROUPNAME} ${APPNAME}" "DisplayName" "${GROUPNAME} - ${APPNAME} - ${DESCRIPTION}"

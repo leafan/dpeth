@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/eeefan/dpeth/log"
+	"github.com/jackpal/go-nat-pmp"
 )
 
 // An implementation of nat.Interface can map local ports to ports

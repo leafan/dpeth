@@ -32,11 +32,11 @@ import (
 	"time"
 	"unsafe"
 
-	mmap "github.com/edsrzf/mmap-go"
 	"github.com/eeefan/dpeth/consensus"
 	"github.com/eeefan/dpeth/log"
 	"github.com/eeefan/dpeth/metrics"
 	"github.com/eeefan/dpeth/rpc"
+	mmap "github.com/edsrzf/mmap-go"
 	"github.com/hashicorp/golang-lru/simplelru"
 )
 

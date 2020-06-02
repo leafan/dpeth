@@ -16,6 +16,8 @@
 
 package ethclient
 
+import "github.com/eeefan/dpeth"
+
 // Verify that Client implements the ethereum interfaces.
 var (
 	_ = ethereum.ChainReader(&Client{})

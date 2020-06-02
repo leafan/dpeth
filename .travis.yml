@@ -1,5 +1,5 @@
 language: go
-go_import_path: github.com/eeefan/dpeth
+go_import_path: github.com/goomtu/dpeth
 sudo: false
 matrix:
   include:

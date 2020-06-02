@@ -26,8 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"strconv"
-
 	"github.com/eeefan/dpeth/accounts"
 	"github.com/eeefan/dpeth/accounts/keystore"
 	"github.com/eeefan/dpeth/cmd/utils"
@@ -41,6 +39,7 @@ import (
 	"github.com/eeefan/dpeth/params"
 	"github.com/eeefan/dpeth/rpc"
 	"gopkg.in/urfave/cli.v1"
+	"strconv"
 )
 
 const (
@@ -162,7 +161,7 @@ func init() {
 	// Initialize the CLI app and start dpeth
 	app.Action = dpeth
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2018 The eeefan Authors"
+	app.Copyright = "Copyright 2018 The goomtu Authors"
 	app.Commands = []cli.Command{
 		// See chaincmd.go:
 		initCommand,

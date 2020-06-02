@@ -19,6 +19,7 @@ package shhclient
 import (
 	"context"
 
+	"github.com/eeefan/dpeth"
 	"github.com/eeefan/dpeth/common/hexutil"
 	"github.com/eeefan/dpeth/rpc"
 	whisper "github.com/eeefan/dpeth/whisper/whisperv6"

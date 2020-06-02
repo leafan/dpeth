@@ -18,7 +18,6 @@ package common
 
 import (
 	"encoding/json"
-
 	"github.com/eeefan/dpeth/common/hexutil"
 
 	"math/big"

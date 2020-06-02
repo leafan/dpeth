@@ -19,12 +19,11 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/eeefan/dpeth/common/hexutil"
 	"io"
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"github.com/eeefan/dpeth/common/hexutil"
 
 	"github.com/eeefan/dpeth/common"
 	"github.com/eeefan/dpeth/log"

@@ -179,7 +179,7 @@ type GasPricer interface {
 
 // A PendingStateReader provides access to the pending state, which is the result of all
 // known executable transactions which have not yet been included in the blockchain. It is
-// commonly used to display the result of â€™unconfirmedâ€™ actions (e.g. wallet value
+// commonly used to display the result of ’unconfirmed’ actions (e.g. wallet value
 // transfers) initiated by the user. The PendingNonceAt operation is a good way to
 // retrieve the next available transaction nonce for a specific account.
 type PendingStateReader interface {

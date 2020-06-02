@@ -131,7 +131,7 @@ func (s *Snapshot) createSignerQueue() (signers []common.Address, err error) {
 		return nil, errSignerQueueEmpty
 	}
 
-	// è¡¥è¶³ MaxSignerCount ä¸ª signers
+	// 补足 MaxSignerCount 个 signers
 	for i := 0; i < int(s.config.MaxSignerCount); i++ {
 		returnSigners = append(returnSigners, candidates[i%len(candidates)])
 	}

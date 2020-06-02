@@ -20,14 +20,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/eeefan/dpeth/common/hexutil"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/eeefan/dpeth/common/hexutil"
 
 	"github.com/eeefan/dpeth/common"
 	"github.com/eeefan/dpeth/crypto"

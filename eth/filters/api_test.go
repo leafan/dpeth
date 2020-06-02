@@ -19,9 +19,8 @@ package filters
 import (
 	"encoding/json"
 	"fmt"
-	"testing"
-
 	"github.com/eeefan/dpeth/common/hexutil"
+	"testing"
 
 	"github.com/eeefan/dpeth/common"
 	"github.com/eeefan/dpeth/rpc"

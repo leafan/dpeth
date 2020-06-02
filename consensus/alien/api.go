@@ -19,12 +19,11 @@
 package alien
 
 import (
-	"math/big"
-
 	"github.com/eeefan/dpeth/common"
 	"github.com/eeefan/dpeth/consensus"
 	"github.com/eeefan/dpeth/core/types"
 	"github.com/eeefan/dpeth/rpc"
+	"math/big"
 )
 
 // API is a user facing RPC API to allow controlling the signer and voting

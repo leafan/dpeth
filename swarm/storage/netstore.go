@@ -33,7 +33,7 @@ it implements the ChunkStore interface and embeds LocalStore
 It is called by the bzz protocol instances via Depo (the store/retrieve request handler)
 a protocol instance is running on each peer, so this is heavily parallelised.
 NetStore falls back to a backend (CloudStorage interface)
-implemented by bzz/network/forwarder. forwarder or IPFS or IPÎžS
+implemented by bzz/network/forwarder. forwarder or IPFS or IPΞS
 */
 type NetStore struct {
 	hashfunc   SwarmHasher
@@ -43,7 +43,7 @@ type NetStore struct {
 
 // backend engine for cloud store
 // It can be aggregate dispatching to several parallel implementations:
-// bzz/network/forwarder. forwarder or IPFS or IPÎžS
+// bzz/network/forwarder. forwarder or IPFS or IPΞS
 type CloudStore interface {
 	Store(*Chunk)
 	Deliver(*Chunk)

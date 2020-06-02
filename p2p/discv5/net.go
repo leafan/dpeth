@@ -246,7 +246,7 @@ func (net *Network) lookup(target common.Hash, stopOnMatch bool) []*Node {
 	// Get initial answers from the local node.
 	result.push(net.tab.self, bucketSize)
 	for {
-		// Ask the Î± closest nodes that we haven't asked yet.
+		// Ask the α closest nodes that we haven't asked yet.
 		for i := 0; i < len(result.entries) && pendingQueries < alpha; i++ {
 			n := result.entries[i]
 			if !asked[n.ID] {

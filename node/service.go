@@ -75,11 +75,11 @@ type ServiceConstructor func(ctx *ServiceContext) (Service, error)
 //
 // Notes:
 //
-// â€¢ Service life-cycle management is delegated to the node. The service is allowed to
+// • Service life-cycle management is delegated to the node. The service is allowed to
 // initialize itself upon creation, but no goroutines should be spun up outside of the
 // Start method.
 //
-// â€¢ Restart logic is not required as the node will create a fresh instance
+// • Restart logic is not required as the node will create a fresh instance
 // every time a service is started.
 type Service interface {
 	// Protocols retrieves the P2P protocols the service wishes to start.

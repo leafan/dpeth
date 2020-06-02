@@ -42,6 +42,7 @@ import (
 	"github.com/eeefan/dpeth/params"
 	"github.com/eeefan/dpeth/rlp"
 	"github.com/eeefan/dpeth/trie"
+	"github.com/hashicorp/golang-lru"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
 

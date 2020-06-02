@@ -24,12 +24,12 @@ import (
 	"net"
 	"os"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/eeefan/dpeth/crypto"
 	"github.com/eeefan/dpeth/node"
 	"github.com/eeefan/dpeth/p2p"
 	"github.com/eeefan/dpeth/p2p/discover"
 	"github.com/eeefan/dpeth/rpc"
+	"github.com/docker/docker/pkg/reexec"
 )
 
 // Node represents a node in a simulation network which is created by a
