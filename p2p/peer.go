@@ -225,6 +225,8 @@ loop:
 		}
 	}
 
+	log.Trace("peer", "close here. reason: ", reason, "err", err)
+
 	close(p.closed)
 	p.rw.close(reason)
 	p.wg.Wait()
@@ -393,7 +395,7 @@ func (rw *protoRW) WriteMsg(msg Msg) (err error) {
 		// as well but we don't want to rely on that.
 		rw.werr <- err
 	case <-rw.closed:
-		err = fmt.Errorf("shutting down")
+		err = fmt.Errorf("[WriteMsg] shutting down")
 	}
 	return err
 }

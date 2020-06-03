@@ -70,10 +70,20 @@ func (s *Snapshot) verifySignerQueue(signerQueue []common.Address) error {
 		return err
 	}
 	if len(sq) == 0 || len(sq) != len(signerQueue) {
+		log.Warn("verifySignerQueue", "len(sq)", len(sq), "len(signerQueue)", len(signerQueue))
 		return errInvalidSignerQueue
 	}
 	for i, signer := range signerQueue {
 		if signer != sq[i] {
+			log.Warn("verifySignerQueue", "InvalidSignerQueue, signer", signer, "i", i, "sq[i]", sq[i])
+
+			for _, signer := range signerQueue {
+				log.Warn("verifySignerQueue", "debug current signer", signer)
+			}
+			for _, signer := range sq {
+				log.Warn("verifySignerQueue", "debug snapshot signer", signer)
+			}
+
 			return errInvalidSignerQueue
 		}
 	}
@@ -102,7 +112,6 @@ func (s *Snapshot) buildTallySlice() TallySlice {
 }
 
 func (s *Snapshot) createSignerQueue() (signers []common.Address, err error) {
-
 	if (s.Number+1)%s.config.MaxSignerCount != 0 || s.Hash != s.HistoryHash[len(s.HistoryHash)-1] {
 		return nil, errCreateSignerQueueNotAllowed
 	}
@@ -113,15 +122,14 @@ func (s *Snapshot) createSignerQueue() (signers []common.Address, err error) {
 	var returnSigners []common.Address
 
 	if (s.Number+1)%(s.config.MaxSignerCount) == 0 {
-		log.Trace("[createSignerQueue] len candidateSigners: ", len(s.CandidateSigners))
+		log.Trace("createSignerQueue", "len candidateSigners", len(s.CandidateSigners))
 
 		if len(s.CandidateSigners) <= int(s.config.MaxSignerCount) {
-			for signer := range s.CandidateSigners {
-				log.Trace("[createSignerQueue] debug signer: ", signer)
-				candidates = append(candidates, signer)
+			for i := range s.CandidateSigners {
+				candidates = append(candidates, s.CandidateSigners[i])
 			}
 		} else {
-			log.Warn("[createSignerQueue] CandidateSigners len is too big!!! should not come here.")
+			log.Warn("createSignerQueue: CandidateSigners len is too big!!! should not come here.")
 			return nil, errCreateSignerQueueNotAllowed
 		}
 	}

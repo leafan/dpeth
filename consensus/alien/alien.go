@@ -472,7 +472,6 @@ func (a *Alien) verifySeal(chain consensus.ChainReader, header *types.Header, pa
 	}
 
 	if !chain.Config().Alien.SideChain {
-
 		if number > a.config.MaxSignerCount {
 			var parent *types.Header
 			if len(parents) > 0 {
@@ -496,6 +495,7 @@ func (a *Alien) verifySeal(chain consensus.ChainReader, header *types.Header, pa
 			if number%a.config.MaxSignerCount == 0 {
 				err := snap.verifySignerQueue(currentHeaderExtra.SignerQueue)
 				if err != nil {
+					log.Warn("verifySignerQueue", "number", number, "err", err)
 					return err
 				}
 
@@ -847,7 +847,7 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 				}
 			}
 		} else if number%a.config.MaxSignerCount == 0 {
-			log.Trace("[alien Finalize] number%a.config.MaxSignerCount == 0 now, number: ", number)
+			log.Trace("[alien Finalize] number%a.config.MaxSignerCount == 0 now", "number", number)
 
 			currentHeaderExtra.LoopStartTime = currentHeaderExtra.LoopStartTime + a.config.Period*a.config.MaxSignerCount
 

@@ -128,7 +128,7 @@ type Snapshot struct {
 	Hash             common.Hash                                       `json:"hash"`              // Block hash where the snapshot was created
 	HistoryHash      []common.Hash                                     `json:"historyHash"`       // Block hash list for two recent loop
 	Signers          []*common.Address                                 `json:"signers"`           // Signers queue in current header
-	CandidateSigners map[common.Address]uint64                         `json:"candidateSigners"`  // Candidate Signers queue in current header
+	CandidateSigners []common.Address                                  `json:"candidateSigners"`  // Candidate Signers queue in current header
 	Votes            map[common.Address]*Vote                          `json:"votes"`             // All validate votes from genesis block
 	Tally            map[common.Address]*big.Int                       `json:"tally"`             // Stake for each candidate address
 	Voters           map[common.Address]*big.Int                       `json:"voters"`            // Block number for each voter address
@@ -166,7 +166,7 @@ func newSnapshot(config *params.AlienConfig, sigcache *lru.ARCCache, hash common
 		Tally:            make(map[common.Address]*big.Int),
 		Voters:           make(map[common.Address]*big.Int),
 		Punished:         make(map[common.Address]uint64),
-		CandidateSigners: make(map[common.Address]uint64),
+		CandidateSigners: []common.Address{},
 		Candidates:       make(map[common.Address]uint64),
 		Confirmations:    make(map[uint64][]*common.Address),
 		Proposals:        make(map[common.Hash]*Proposal),
@@ -201,8 +201,10 @@ func newSnapshot(config *params.AlienConfig, sigcache *lru.ARCCache, hash common
 	if len(config.SelfVoteSigners) > 0 {
 		var prefixSelfVoteSigners []common.Address
 		for _, unPrefixSelfVoteSigners := range config.SelfVoteSigners {
-			prefixSelfVoteSigners = append(prefixSelfVoteSigners, common.Address(unPrefixSelfVoteSigners))
-			snap.CandidateSigners[common.Address(unPrefixSelfVoteSigners)] = 1
+			oneAddr := common.Address(unPrefixSelfVoteSigners)
+
+			prefixSelfVoteSigners = append(prefixSelfVoteSigners, oneAddr)
+			snap.CandidateSigners = append(snap.CandidateSigners, oneAddr)
 		}
 
 		for i := 0; i < int(config.MaxSignerCount); i++ {
@@ -264,7 +266,7 @@ func (s *Snapshot) copy() *Snapshot {
 		Voters:           make(map[common.Address]*big.Int),
 		Candidates:       make(map[common.Address]uint64),
 		Punished:         make(map[common.Address]uint64),
-		CandidateSigners: make(map[common.Address]uint64),
+		CandidateSigners: make([]common.Address, len(s.CandidateSigners)),
 		Proposals:        make(map[common.Hash]*Proposal),
 		Confirmations:    make(map[uint64][]*common.Address),
 
@@ -282,6 +284,8 @@ func (s *Snapshot) copy() *Snapshot {
 	}
 	copy(cpy.HistoryHash, s.HistoryHash)
 	copy(cpy.Signers, s.Signers)
+	copy(cpy.CandidateSigners, s.CandidateSigners)
+
 	for voter, vote := range s.Votes {
 		cpy.Votes[voter] = &Vote{
 			Voter:     vote.Voter,
@@ -297,9 +301,6 @@ func (s *Snapshot) copy() *Snapshot {
 	}
 	for candidate, state := range s.Candidates {
 		cpy.Candidates[candidate] = state
-	}
-	for signer, cnt := range s.CandidateSigners {
-		cpy.CandidateSigners[signer] = cnt
 	}
 	for signer, cnt := range s.Punished {
 		cpy.Punished[signer] = cnt
@@ -1044,10 +1045,9 @@ func (s *Snapshot) updateSnapshotByConfirmations(confirmations []Confirmation) {
 }
 
 func (s *Snapshot) updateSnapshotByAdminSigners(candidateSigners []common.Address, headerNumber *big.Int) {
-	newCandidateSigners := make(map[common.Address]uint64)
-
-	for _, signer := range candidateSigners {
-		newCandidateSigners[signer] = 1
+	var newCandidateSigners []common.Address
+	for i := range candidateSigners {
+		newCandidateSigners = append(newCandidateSigners, candidateSigners[i])
 	}
 
 	s.CandidateSigners = newCandidateSigners

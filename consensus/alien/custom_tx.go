@@ -613,18 +613,28 @@ func (a *Alien) processEventVote(currentBlockVotes []Vote, state *state.StateDB,
 // attention: candidateSigners可能不足21个，因此调用处需要手动补足
 func (a *Alien) processAdminSigner(signers []common.Address, op string, to common.Address) []common.Address {
 	var newSigners []common.Address
+	var repeated = false
 
 	for _, s := range signers {
-		if s.Str() == to.Str() && op == ufoAdminDelSigner && len(signers) > 1 {
-			log.Trace("[processAdminSigner] delete signer: ", to.String())
-			continue // continue 表示删除
+		if s.Str() == to.Str() {
+			if op == ufoAdminDelSigner && len(signers) > 1 {
+				// 如果是删除，则直接删除
+				log.Trace("processAdminSigner", "delete signer", to.String())
+				continue
+			}
+
+			if op == ufoAdminAddSigner {
+				// 如果是添加signer，而此signer已存在，则报错
+				log.Warn("processAdminSigner", "repeated signer", to.String())
+				repeated = true
+			}
 		}
 
 		newSigners = append(newSigners, s)
 	}
 
-	if op == ufoAdminAddSigner && len(newSigners) < int(a.config.MaxSignerCount) {
-		log.Trace("[processAdminSigner] add signer: ", to.String())
+	if !repeated && op == ufoAdminAddSigner && len(newSigners) < int(a.config.MaxSignerCount) {
+		log.Trace("processAdminSigner", "add signer", to.String())
 		newSigners = append(newSigners, to)
 	}
 
