@@ -179,35 +179,25 @@ docker:
 push: docker
 	docker push $(appImg)
 
+pull:
+	docker pull $(appImg)
 
-#查看服务状态
+
 ps:
 	$(COMPOSE) ps
 
-#跟踪业务日志，可传APP变量
 logsf:
 	$(COMPOSE) logs -f --tail=100
 
-#查看业务日志，可传APP变量
 logs:
 	$(COMPOSE) logs
 
-#启动某个服务
 run:
 	$(COMPOSE) up -d
 
-# 重启服务，可传APP变量
 restart:
 	@$(COMPOSE) restart $(APP)
 
-# 停止所有服务
 stop:
 	$(COMPOSE) stop $(APP)
 
-
-
-# for debug use
-FILE = Makefile.test
-ifeq ($(FILE), $(wildcard $(FILE)))
-include Makefile.test
-endif

@@ -849,7 +849,9 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 		} else if number%a.config.MaxSignerCount == 0 {
 			log.Trace("[alien Finalize] number%a.config.MaxSignerCount == 0 now", "number", number)
 
-			currentHeaderExtra.LoopStartTime = currentHeaderExtra.LoopStartTime + a.config.Period*a.config.MaxSignerCount
+			// currentHeaderExtra.LoopStartTime = currentHeaderExtra.LoopStartTime + a.config.Period*a.config.MaxSignerCount
+			// fix the loop time: sometime the beginner signer was offline, then the loopStartTime is always later than the header.
+			currentHeaderExtra.LoopStartTime = header.Time.Uint64()
 
 			// create random signersQueue in currentHeaderExtra by snapshot.Tally
 			currentHeaderExtra.SignerQueue = []common.Address{}

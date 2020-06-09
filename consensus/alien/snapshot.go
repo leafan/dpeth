@@ -1142,8 +1142,11 @@ func (s *Snapshot) inturn(signer common.Address, headerTime uint64) bool {
 		var loopIndex uint64
 		if loopIndex = ((headerTime - s.LoopStartTime) / s.config.Period) % uint64(signersCount); *s.Signers[loopIndex] == signer {
 			return true
+		} else {
+			log.Trace("inturn false", "headerTime", headerTime, "s.LoopStartTime", s.LoopStartTime, "signersCount", signersCount, "loopIndex", loopIndex, "*s.Signers[loopIndex]", *s.Signers[loopIndex], "signer", signer)
 		}
 	}
+
 	return false
 
 }
