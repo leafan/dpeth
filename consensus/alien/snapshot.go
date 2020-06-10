@@ -449,22 +449,22 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 		snap.updateSnapshotByConfirmations(headerExtra.CurrentBlockConfirmations)
 
 		// deal the new vote from voter
-		snap.updateSnapshotByVotes(headerExtra.CurrentBlockVotes, header.Number)
+		// snap.updateSnapshotByVotes(headerExtra.CurrentBlockVotes, header.Number)
 
 		// deal the admin signers for adding or deleting.
 		snap.updateSnapshotByAdminSigners(headerExtra.CandidateSigners, header.Number)
 
 		// deal the voter which balance modified
-		snap.updateSnapshotByMPVotes(headerExtra.ModifyPredecessorVotes)
+		// snap.updateSnapshotByMPVotes(headerExtra.ModifyPredecessorVotes)
 
 		// deal the snap related with punished
 		snap.updateSnapshotForPunish(headerExtra.SignerMissing, header.Number, header.Coinbase)
 
 		// deal proposals
-		snap.updateSnapshotByProposals(headerExtra.CurrentBlockProposals, header.Number)
+		// snap.updateSnapshotByProposals(headerExtra.CurrentBlockProposals, header.Number)
 
 		// deal declares
-		snap.updateSnapshotByDeclares(headerExtra.CurrentBlockDeclares, header.Number)
+		// snap.updateSnapshotByDeclares(headerExtra.CurrentBlockDeclares, header.Number)
 
 		// deal trantor upgrade
 		if snap.Period == 0 {
@@ -472,31 +472,32 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 		}
 
 		// deal setcoinbase for side chain
-		snap.updateSnapshotBySetSCCoinbase(headerExtra.SideChainSetCoinbases)
+		// snap.updateSnapshotBySetSCCoinbase(headerExtra.SideChainSetCoinbases)
 
 		// deal confirmation for side chain
-		snap.updateSnapshotBySCConfirm(headerExtra.SideChainConfirmations, header.Number)
+		// snap.updateSnapshotBySCConfirm(headerExtra.SideChainConfirmations, header.Number)
 
 		// deal notice confirmation
-		snap.updateSnapshotByNoticeConfirm(headerExtra.SideChainNoticeConfirmed, header.Number)
+		// snap.updateSnapshotByNoticeConfirm(headerExtra.SideChainNoticeConfirmed, header.Number)
 
 		// calculate proposal result
-		snap.calculateProposalResult(header.Number)
+		// snap.calculateProposalResult(header.Number)
 
 		// check the len of candidate if not candidateNeedPD
-		if !candidateNeedPD && (snap.Number+1)%(snap.config.MaxSignerCount*snap.LCRS) == 0 && len(snap.Candidates) > candidateMaxLen {
-			snap.removeExtraCandidate()
-		}
+		// if !candidateNeedPD && (snap.Number+1)%(snap.config.MaxSignerCount*snap.LCRS) == 0 && len(snap.Candidates) > candidateMaxLen {
+		// 	snap.removeExtraCandidate()
+		// }
 
 		/*
 		 * follow methods only work on side chain !!!! not like above method
 		 */
 
 		// deal the notice from main chain
-		snap.updateSnapshotBySCCharging(headerExtra.SideChainCharging, header.Number, header.Coinbase)
+		// snap.updateSnapshotBySCCharging(headerExtra.SideChainCharging, header.Number, header.Coinbase)
 
-		snap.updateSnapshotForExpired(header.Number)
+		// snap.updateSnapshotForExpired(header.Number)
 	}
+
 	snap.Number += uint64(len(headers))
 	snap.Hash = headers[len(headers)-1].Hash()
 
@@ -1018,7 +1019,13 @@ func (s *Snapshot) updateSnapshotForExpired(headerNumber *big.Int) {
 			if _, ok := s.SCCoinbase[address]; ok {
 				delete(s.SCCoinbase, address)
 			}
+
 			delete(s.Tally, address)
+
+			// fix bug: 当 tally被删除后，updateSnapshotByVotes 函数中同步时会导致tally数组
+			// 与Votes等数组不同步，从而tally数组不存在votes中地址，出现数组溢出
+			delete(s.Votes, address)
+			delete(s.Voters, address)
 		}
 	}
 }
