@@ -51,8 +51,9 @@ const (
 	ufoEventDeclare     = "declare"
 	ufoEventSetCoinbase = "setcb"
 
-	ufoAdminAddSigner = "adds"
-	ufoAdminDelSigner = "dels"
+	ufoAdminAddSigner   = "adds"
+	ufoAdminDelSigner   = "dels"
+	ufoAdminModifyAdmin = "modadmin"
 
 	ufoMinSplitLen        = 3
 	posPrefix             = 0
@@ -234,6 +235,7 @@ type HeaderExtra struct {
 	LoopStartTime             uint64
 	SignerQueue               []common.Address
 	CandidateSigners          []common.Address // candidate signers, it's a duplicate info for signerqueue.
+	SignerAdmin               common.Address   // the admin of managing signers, can be transfered if needed.
 	SignerMissing             []common.Address
 	ConfirmedBlockNumber      uint64
 	SideChainConfirmations    []SCConfirmation
@@ -363,13 +365,20 @@ func (a *Alien) processCustomTx(headerExtra HeaderExtra, chain consensus.ChainRe
 						// }
 
 						if txDataInfo[posCategory] == ufoCategoryAdmin {
-							if txSender.Str() == a.config.AdminAddress.Str() {
+							if txSender.Str() == headerExtra.SignerAdmin.Str() && tx.To() != nil {
 								if txDataInfo[posAdminEvent] == ufoAdminAddSigner || txDataInfo[posAdminEvent] == ufoAdminDelSigner {
 									headerExtra.CandidateSigners = a.processAdminSigner(headerExtra.CandidateSigners,
 										txDataInfo[posAdminEvent], *tx.To())
+								} else if txDataInfo[posAdminEvent] == ufoAdminModifyAdmin {
+									if headerExtra.SignerAdmin != *tx.To() {
+										log.Debug("admin", "modify admin now, admin", *tx.To())
+										headerExtra.SignerAdmin = *tx.To()
+									} else {
+										log.Warn("admin", "newer admin is the same with old, ignore..., new admin", *tx.To())
+									}
 								}
 							} else {
-								log.Warn("illegal admin address: ", txSender)
+								log.Warn("admin", "illegal admin address: ", txSender)
 							}
 						}
 					}

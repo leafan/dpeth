@@ -129,6 +129,7 @@ type Snapshot struct {
 	HistoryHash      []common.Hash                                     `json:"historyHash"`       // Block hash list for two recent loop
 	Signers          []*common.Address                                 `json:"signers"`           // Signers queue in current header
 	CandidateSigners []common.Address                                  `json:"candidateSigners"`  // Candidate Signers queue in current header
+	SignerAdmin      common.Address                                    `json:"signerAdmin"`       // The admin of adding or deleting signers
 	Votes            map[common.Address]*Vote                          `json:"votes"`             // All validate votes from genesis block
 	Tally            map[common.Address]*big.Int                       `json:"tally"`             // Stake for each candidate address
 	Voters           map[common.Address]*big.Int                       `json:"voters"`            // Block number for each voter address
@@ -167,6 +168,7 @@ func newSnapshot(config *params.AlienConfig, sigcache *lru.ARCCache, hash common
 		Voters:           make(map[common.Address]*big.Int),
 		Punished:         make(map[common.Address]uint64),
 		CandidateSigners: []common.Address{},
+		SignerAdmin:      config.AdminAddress,
 		Candidates:       make(map[common.Address]uint64),
 		Confirmations:    make(map[uint64][]*common.Address),
 		Proposals:        make(map[common.Hash]*Proposal),
@@ -267,6 +269,7 @@ func (s *Snapshot) copy() *Snapshot {
 		Candidates:       make(map[common.Address]uint64),
 		Punished:         make(map[common.Address]uint64),
 		CandidateSigners: make([]common.Address, len(s.CandidateSigners)),
+		SignerAdmin:      s.SignerAdmin,
 		Proposals:        make(map[common.Hash]*Proposal),
 		Confirmations:    make(map[uint64][]*common.Address),
 
@@ -453,6 +456,9 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 
 		// deal the admin signers for adding or deleting.
 		snap.updateSnapshotByAdminSigners(headerExtra.CandidateSigners, header.Number)
+
+		// update the signerAdmin
+		snap.SignerAdmin = headerExtra.SignerAdmin
 
 		// deal the voter which balance modified
 		// snap.updateSnapshotByMPVotes(headerExtra.ModifyPredecessorVotes)

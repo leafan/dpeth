@@ -795,6 +795,7 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 		currentHeaderExtra.SignerQueue = parentHeaderExtra.SignerQueue
 		currentHeaderExtra.CandidateSigners = parentHeaderExtra.CandidateSigners
 		currentHeaderExtra.LoopStartTime = parentHeaderExtra.LoopStartTime
+		currentHeaderExtra.SignerAdmin = parentHeaderExtra.SignerAdmin
 
 		if a.config.IsTrantor(header.Number) {
 			var grandParentHeaderExtra HeaderExtra
@@ -836,6 +837,8 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 		// write signerQueue in first header, from self vote signers in genesis block
 		if number == 1 {
 			currentHeaderExtra.LoopStartTime = a.config.GenesisTimestamp
+			currentHeaderExtra.SignerAdmin = a.config.AdminAddress
+
 			if len(a.config.SelfVoteSigners) > 0 {
 				for i := 0; i < int(a.config.MaxSignerCount); i++ {
 					currentHeaderExtra.SignerQueue = append(currentHeaderExtra.SignerQueue, common.Address(a.config.SelfVoteSigners[i%len(a.config.SelfVoteSigners)]))
