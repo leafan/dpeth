@@ -130,6 +130,7 @@ type Snapshot struct {
 	Signers          []*common.Address                                 `json:"signers"`           // Signers queue in current header
 	CandidateSigners []common.Address                                  `json:"candidateSigners"`  // Candidate Signers queue in current header
 	SignerAdmin      common.Address                                    `json:"signerAdmin"`       // The admin of adding or deleting signers
+	PerBlockReward   *big.Int                                          `json:"perBlockReward"`    // reward for every block
 	Votes            map[common.Address]*Vote                          `json:"votes"`             // All validate votes from genesis block
 	Tally            map[common.Address]*big.Int                       `json:"tally"`             // Stake for each candidate address
 	Voters           map[common.Address]*big.Int                       `json:"voters"`            // Block number for each voter address
@@ -182,6 +183,7 @@ func newSnapshot(config *params.AlienConfig, sigcache *lru.ARCCache, hash common
 		ProposalRefund:   make(map[uint64]map[common.Address]*big.Int),
 		MinerReward:      minerRewardPerThousand,
 		MinVB:            config.MinVoterBalance,
+		PerBlockReward:   config.PerBlockReward,
 	}
 	snap.HistoryHash = append(snap.HistoryHash, hash)
 
@@ -238,6 +240,9 @@ func loadSnapshot(config *params.AlienConfig, sigcache *lru.ARCCache, db ethdb.D
 	if snap.MinVB == nil {
 		snap.MinVB = new(big.Int).Set(minVoterBalance)
 	}
+	if snap.PerBlockReward == nil {
+		snap.PerBlockReward = big.NewInt(0)
+	}
 	return snap, nil
 }
 
@@ -282,8 +287,9 @@ func (s *Snapshot) copy() *Snapshot {
 		LocalNotice:    &CCNotice{CurrentCharging: make(map[common.Hash]GasCharging), ConfirmReceived: make(map[common.Hash]NoticeCR)},
 		ProposalRefund: make(map[uint64]map[common.Address]*big.Int),
 
-		MinerReward: s.MinerReward,
-		MinVB:       nil,
+		MinerReward:    s.MinerReward,
+		MinVB:          nil,
+		PerBlockReward: s.PerBlockReward,
 	}
 	copy(cpy.HistoryHash, s.HistoryHash)
 	copy(cpy.Signers, s.Signers)
@@ -459,6 +465,8 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 
 		// update the signerAdmin
 		snap.SignerAdmin = headerExtra.SignerAdmin
+
+		snap.PerBlockReward = headerExtra.PerBlockReward
 
 		// deal the voter which balance modified
 		// snap.updateSnapshotByMPVotes(headerExtra.ModifyPredecessorVotes)

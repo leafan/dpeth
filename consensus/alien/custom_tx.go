@@ -36,26 +36,32 @@ import (
 
 const (
 	/*
-	 *  ufo:version:category:action/data
+	 *  dpos:version:category:action/data
 	 */
-	ufoPrefix        = "ufo"
-	ufoVersion       = "1"
-	ufoCategoryEvent = "event"
-	ufoCategoryLog   = "oplog"
-	ufoCategorySC    = "sc"
-	ufoCategoryAdmin = "admin"
+	dposPrefix        = "dpos"
+	dposVersion       = "1"
+	dposCategoryEvent = "event"
+	dposCategoryLog   = "oplog"
+	dposCategorySC    = "sc"
+	dposCategoryAdmin = "admin"
 
-	ufoEventVote        = "vote"
-	ufoEventConfirm     = "confirm"
-	ufoEventPorposal    = "proposal"
-	ufoEventDeclare     = "declare"
-	ufoEventSetCoinbase = "setcb"
+	dposEventVote        = "vote"
+	dposEventConfirm     = "confirm"
+	dposEventPorposal    = "proposal"
+	dposEventDeclare     = "declare"
+	dposEventSetCoinbase = "setcb"
 
-	ufoAdminAddSigner   = "adds"
-	ufoAdminDelSigner   = "dels"
-	ufoAdminModifyAdmin = "modadmin"
+	// 新增删除出块节点signer
+	dposAdminAddSigner = "adds"
+	dposAdminDelSigner = "dels"
 
-	ufoMinSplitLen        = 3
+	// 更换管理员
+	dposAdminModifyAdmin = "modadmin"
+
+	// 修改出块节点每个block的奖励数目
+	dposAdminModifyMinerReward = "modreward"
+
+	dposMinSplitLen       = 4
 	posPrefix             = 0
 	posVersion            = 1
 	posCategory           = 2
@@ -66,7 +72,8 @@ const (
 	posEventSetCoinbase   = 3
 	posEventConfirmNumber = 4
 
-	posAdminEvent = 3
+	posAdminEvent            = 3
+	posAdminEventBlockReward = 4
 
 	/*
 	 *  proposal type
@@ -115,7 +122,7 @@ type RefundPair struct {
 type RefundHash map[common.Hash]RefundPair
 
 // Vote :
-// vote come from custom tx which data like "ufo:1:event:vote"
+// vote come from custom tx which data like "dpos:1:event:vote"
 // Sender of tx is Voter, the tx.to is Candidate
 // Stake is the balance of Voter when create this vote
 type Vote struct {
@@ -125,7 +132,7 @@ type Vote struct {
 }
 
 // Confirmation :
-// confirmation come  from custom tx which data like "ufo:1:event:confirm:123"
+// confirmation come  from custom tx which data like "dpos:1:event:confirm:123"
 // 123 is the block number be confirmed
 // Sender of tx is Signer only if the signer in the SignerQueue for block number 123
 type Confirmation struct {
@@ -134,7 +141,7 @@ type Confirmation struct {
 }
 
 // Proposal :
-// proposal come from  custom tx which data like "ufo:1:event:proposal:candidate:add:address" or "ufo:1:event:proposal:percentage:60"
+// proposal come from  custom tx which data like "dpos:1:event:proposal:candidate:add:address" or "dpos:1:event:proposal:percentage:60"
 // proposal only come from the current candidates
 // not only candidate add/remove , current signer can proposal for params modify like percentage of reward distribution ...
 type Proposal struct {
@@ -183,7 +190,7 @@ func (p *Proposal) copy() *Proposal {
 }
 
 // Declare :
-// declare come from custom tx which data like "ufo:1:event:declare:hash:yes"
+// declare come from custom tx which data like "dpos:1:event:declare:hash:yes"
 // proposal only come from the current candidates
 // hash is the hash of proposal tx
 type Declare struct {
@@ -236,6 +243,7 @@ type HeaderExtra struct {
 	SignerQueue               []common.Address
 	CandidateSigners          []common.Address // candidate signers, it's a duplicate info for signerqueue.
 	SignerAdmin               common.Address   // the admin of managing signers, can be transfered if needed.
+	PerBlockReward            *big.Int         // block reward for this return, could be modified every 21 blocks.
 	SignerMissing             []common.Address
 	ConfirmedBlockNumber      uint64
 	SideChainConfirmations    []SCConfirmation
@@ -272,7 +280,7 @@ func decodeHeaderExtra(config *params.AlienConfig, number *big.Int, b []byte, va
 // Build side chain confirm data
 func (a *Alien) buildSCEventConfirmData(scHash common.Hash, headerNumber *big.Int, headerTime *big.Int, lastLoopInfo string, chargingInfo string) []byte {
 	return []byte(fmt.Sprintf("%s:%s:%s:%s:%s:%d:%d:%s:%s",
-		ufoPrefix, ufoVersion, ufoCategorySC, ufoEventConfirm,
+		dposPrefix, dposVersion, dposCategorySC, dposEventConfirm,
 		scHash.Hex(), headerNumber.Uint64(), headerTime.Uint64(), lastLoopInfo, chargingInfo))
 
 }
@@ -304,77 +312,29 @@ func (a *Alien) processCustomTx(headerExtra HeaderExtra, chain consensus.ChainRe
 			continue
 		}
 
-		if len(string(tx.Data())) >= len(ufoPrefix) {
+		if len(string(tx.Data())) >= len(dposPrefix) {
 			txData := string(tx.Data())
 			txDataInfo := strings.Split(txData, ":")
-			if len(txDataInfo) >= ufoMinSplitLen {
-				if txDataInfo[posPrefix] == ufoPrefix {
-					if txDataInfo[posVersion] == ufoVersion {
-						// process vote event
-						// if txDataInfo[posCategory] == ufoCategoryEvent {
-						// 	if len(txDataInfo) > ufoMinSplitLen {
-						// 		// check is vote or not
-						// 		if txDataInfo[posEventVote] == ufoEventVote && (!candidateNeedPD || snap.isCandidate(*tx.To())) && state.GetBalance(txSender).Cmp(snap.MinVB) > 0 {
-						// 			headerExtra.CurrentBlockVotes = a.processEventVote(headerExtra.CurrentBlockVotes, state, tx, txSender)
-						// 		} else if txDataInfo[posEventConfirm] == ufoEventConfirm && snap.isCandidate(txSender) {
-						// 			headerExtra.CurrentBlockConfirmations, refundHash = a.processEventConfirm(headerExtra.CurrentBlockConfirmations, chain, txDataInfo, number, tx, txSender, refundHash)
-						// 		} else if txDataInfo[posEventProposal] == ufoEventPorposal {
-						// 			headerExtra.CurrentBlockProposals = a.processEventProposal(headerExtra.CurrentBlockProposals, txDataInfo, state, tx, txSender, snap)
-						// 		} else if txDataInfo[posEventDeclare] == ufoEventDeclare && snap.isCandidate(txSender) {
-						// 			headerExtra.CurrentBlockDeclares = a.processEventDeclare(headerExtra.CurrentBlockDeclares, txDataInfo, tx, txSender)
-						// 		}
+			if len(txDataInfo) >= dposMinSplitLen {
+				if txDataInfo[posPrefix] == dposPrefix {
+					if txDataInfo[posVersion] == dposVersion {
 
-						// 	} else {
-						// 		// todo : something wrong, leave this transaction to process as normal transaction
-						// 	}
-						// } else if txDataInfo[posCategory] == ufoCategoryLog {
-						// 	// todo :
-						// } else if txDataInfo[posCategory] == ufoCategorySC {
-						// 	if len(txDataInfo) > ufoMinSplitLen {
-						// 		if txDataInfo[posEventConfirm] == ufoEventConfirm {
-						// 			if len(txDataInfo) > ufoMinSplitLen+5 {
-						// 				number := new(big.Int)
-						// 				if err := number.UnmarshalText([]byte(txDataInfo[ufoMinSplitLen+2])); err != nil {
-						// 					log.Trace("Side chain confirm info fail", "number", txDataInfo[ufoMinSplitLen+2])
-						// 					continue
-						// 				}
-						// 				if err := new(big.Int).UnmarshalText([]byte(txDataInfo[ufoMinSplitLen+3])); err != nil {
-						// 					log.Trace("Side chain confirm info fail", "time", txDataInfo[ufoMinSplitLen+3])
-						// 					continue
-						// 				}
-						// 				loopInfo := txDataInfo[ufoMinSplitLen+4]
-						// 				scHash := common.HexToHash(txDataInfo[ufoMinSplitLen+1])
-						// 				headerExtra.SideChainConfirmations, refundHash = a.processSCEventConfirm(headerExtra.SideChainConfirmations,
-						// 					scHash, number.Uint64(), loopInfo, tx, txSender, refundHash)
-
-						// 				chargingInfo := txDataInfo[ufoMinSplitLen+5]
-						// 				headerExtra.SideChainNoticeConfirmed = a.processSCEventNoticeConfirm(headerExtra.SideChainNoticeConfirmed,
-						// 					scHash, number.Uint64(), chargingInfo, txSender)
-
-						// 			}
-						// 		} else if txDataInfo[posEventSetCoinbase] == ufoEventSetCoinbase && snap.isCandidate(txSender) {
-						// 			if len(txDataInfo) > ufoMinSplitLen+1 {
-						// 				// the signer of main chain must send some value to coinbase of side chain for confirm tx of side chain
-						// 				if tx.Value().Cmp(minSCSetCoinbaseValue) >= 0 {
-						// 					headerExtra.SideChainSetCoinbases = a.processSCEventSetCoinbase(headerExtra.SideChainSetCoinbases,
-						// 						common.HexToHash(txDataInfo[ufoMinSplitLen+1]), txSender, *tx.To())
-						// 				}
-						// 			}
-						// 		}
-						// 	}
-						// }
-
-						if txDataInfo[posCategory] == ufoCategoryAdmin {
+						if txDataInfo[posCategory] == dposCategoryAdmin {
 							if txSender.Str() == headerExtra.SignerAdmin.Str() && tx.To() != nil {
-								if txDataInfo[posAdminEvent] == ufoAdminAddSigner || txDataInfo[posAdminEvent] == ufoAdminDelSigner {
+								if txDataInfo[posAdminEvent] == dposAdminAddSigner || txDataInfo[posAdminEvent] == dposAdminDelSigner {
 									headerExtra.CandidateSigners = a.processAdminSigner(headerExtra.CandidateSigners,
 										txDataInfo[posAdminEvent], *tx.To())
-								} else if txDataInfo[posAdminEvent] == ufoAdminModifyAdmin {
+								} else if txDataInfo[posAdminEvent] == dposAdminModifyAdmin {
 									if headerExtra.SignerAdmin != *tx.To() {
 										log.Debug("admin", "modify admin now, admin", *tx.To())
 										headerExtra.SignerAdmin = *tx.To()
 									} else {
 										log.Warn("admin", "newer admin is the same with old, ignore..., new admin", *tx.To())
+									}
+								} else if txDataInfo[posAdminEvent] == dposAdminModifyMinerReward {
+									newPerBlockReward := a.processAdminPerBlockReward(txDataInfo)
+									if newPerBlockReward != nil {
+										headerExtra.PerBlockReward = newPerBlockReward
 									}
 								}
 							} else {
@@ -391,13 +351,6 @@ func (a *Alien) processCustomTx(headerExtra HeaderExtra, chain consensus.ChainRe
 		}
 
 	}
-
-	// for _, receipt := range receipts {
-	// 	if pair, ok := refundHash[receipt.TxHash]; ok && receipt.Status == 1 {
-	// 		pair.GasPrice.Mul(pair.GasPrice, big.NewInt(int64(receipt.GasUsed)))
-	// 		refundGas = a.refundAddGas(refundGas, pair.Sender, pair.GasPrice)
-	// 	}
-	// }
 
 	return headerExtra, refundGas, nil
 }
@@ -446,9 +399,9 @@ func (a *Alien) processSCEventSetCoinbase(scEventSetCoinbases []SCSetCoinbase, h
 
 func (a *Alien) processEventProposal(currentBlockProposals []Proposal, txDataInfo []string, state *state.StateDB, tx *types.Transaction, proposer common.Address, snap *Snapshot) []Proposal {
 	// sample for add side chain proposal
-	// eth.sendTransaction({from:eth.accounts[0],to:eth.accounts[0],value:0,data:web3.toHex("ufo:1:event:proposal:proposal_type:4:sccount:2:screward:50:schash:0x3210000000000000000000000000000000000000000000000000000000000000:vlcnt:4")})
+	// eth.sendTransaction({from:eth.accounts[0],to:eth.accounts[0],value:0,data:web3.toHex("dpos:1:event:proposal:proposal_type:4:sccount:2:screward:50:schash:0x3210000000000000000000000000000000000000000000000000000000000000:vlcnt:4")})
 	// sample for declare
-	// eth.sendTransaction({from:eth.accounts[0],to:eth.accounts[0],value:0,data:web3.toHex("ufo:1:event:declare:hash:0x853e10706e6b9d39c5f4719018aa2417e8b852dec8ad18f9c592d526db64c725:decision:yes")})
+	// eth.sendTransaction({from:eth.accounts[0],to:eth.accounts[0],value:0,data:web3.toHex("dpos:1:event:declare:hash:0x853e10706e6b9d39c5f4719018aa2417e8b852dec8ad18f9c592d526db64c725:decision:yes")})
 	if len(txDataInfo) <= posEventProposal+2 {
 		return currentBlockProposals
 	}
@@ -618,7 +571,25 @@ func (a *Alien) processEventVote(currentBlockVotes []Vote, state *state.StateDB,
 	return currentBlockVotes
 }
 
-// format: ufo:1:admin:add:{address}
+// format: dpos:1:admin:modreward:8000000000000000000
+func (a *Alien) processAdminPerBlockReward(txDataInfo []string) *big.Int {
+	if len(txDataInfo) <= dposMinSplitLen {
+		return nil
+	}
+
+	newPerBlockReward := new(big.Int)
+	newPerBlockReward, success := newPerBlockReward.SetString(txDataInfo[posAdminEventBlockReward], 10)
+	if success == true {
+		log.Trace("processAdminPerBlockReward", "newPerBlockReward", newPerBlockReward)
+		return newPerBlockReward
+	} else {
+		log.Warn("processAdminPerBlockReward", "err, txDataInfo[txDataInfo[posAdminEventBlockReward]]", txDataInfo[posAdminEventBlockReward])
+	}
+
+	return nil
+}
+
+// format: dpos:1:admin:add:{address}
 // attention: candidateSigners可能不足21个，因此调用处需要手动补足
 func (a *Alien) processAdminSigner(signers []common.Address, op string, to common.Address) []common.Address {
 	var newSigners []common.Address
@@ -626,13 +597,13 @@ func (a *Alien) processAdminSigner(signers []common.Address, op string, to commo
 
 	for _, s := range signers {
 		if s.Str() == to.Str() {
-			if op == ufoAdminDelSigner && len(signers) > 1 {
+			if op == dposAdminDelSigner && len(signers) > 1 {
 				// 如果是删除，则直接删除
 				log.Trace("processAdminSigner", "delete signer", to.String())
 				continue
 			}
 
-			if op == ufoAdminAddSigner {
+			if op == dposAdminAddSigner {
 				// 如果是添加signer，而此signer已存在，则报错
 				log.Warn("processAdminSigner", "repeated signer", to.String())
 				repeated = true
@@ -642,7 +613,7 @@ func (a *Alien) processAdminSigner(signers []common.Address, op string, to commo
 		newSigners = append(newSigners, s)
 	}
 
-	if !repeated && op == ufoAdminAddSigner && len(newSigners) < int(a.config.MaxSignerCount) {
+	if !repeated && op == dposAdminAddSigner && len(newSigners) < int(a.config.MaxSignerCount) {
 		log.Trace("processAdminSigner", "add signer", to.String())
 		newSigners = append(newSigners, to)
 	}

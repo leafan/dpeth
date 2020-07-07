@@ -523,7 +523,7 @@ func (self *worker) commitNewWork() {
 
 // For PBFT of alien consensus, the follow code may move later
 // After confirm a new block, the miner send a custom transaction to self, which value is 0
-// and data like "ufo:1:event:confirm:123" (ufo is prefix, 1 is version, 123 is block number
+// and data like "dpos:1:event:confirm:123" (dpos is prefix, 1 is version, 123 is block number
 // to let the next signer now this signer already confirm this block
 func (self *worker) sendConfirmTx(blockNumber *big.Int) error {
 	wallets := self.eth.AccountManager().Wallets()
@@ -540,7 +540,7 @@ func (self *worker) sendConfirmTx(blockNumber *big.Int) error {
 					// coinbase account found
 					// send custom tx
 					nonce := self.snapshotState.GetNonce(account.Address)
-					tmpTx := types.NewTransaction(nonce, account.Address, big.NewInt(0), uint64(100000), big.NewInt(10000), []byte(fmt.Sprintf("ufo:1:event:confirm:%d", blockNumber)))
+					tmpTx := types.NewTransaction(nonce, account.Address, big.NewInt(0), uint64(100000), big.NewInt(10000), []byte(fmt.Sprintf("dpos:1:event:confirm:%d", blockNumber)))
 					signedTx, err := wallet.SignTx(account, tmpTx, self.eth.BlockChain().Config().ChainId)
 					if err != nil {
 						return err

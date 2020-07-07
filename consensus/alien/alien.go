@@ -796,6 +796,7 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 		currentHeaderExtra.CandidateSigners = parentHeaderExtra.CandidateSigners
 		currentHeaderExtra.LoopStartTime = parentHeaderExtra.LoopStartTime
 		currentHeaderExtra.SignerAdmin = parentHeaderExtra.SignerAdmin
+		currentHeaderExtra.PerBlockReward = new(big.Int).Set(parentHeaderExtra.PerBlockReward)
 
 		if a.config.IsTrantor(header.Number) {
 			var grandParentHeaderExtra HeaderExtra
@@ -828,7 +829,7 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 	}
 	if !chain.Config().Alien.SideChain {
 		// calculate votes write into header.extra
-		mcCurrentHeaderExtra, refundGas, err := a.processCustomTx(currentHeaderExtra, chain, header, state, txs, receipts)
+		mcCurrentHeaderExtra, _, err := a.processCustomTx(currentHeaderExtra, chain, header, state, txs, receipts)
 		if err != nil {
 			return nil, err
 		}
@@ -838,6 +839,7 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 		if number == 1 {
 			currentHeaderExtra.LoopStartTime = a.config.GenesisTimestamp
 			currentHeaderExtra.SignerAdmin = a.config.AdminAddress
+			currentHeaderExtra.PerBlockReward = new(big.Int).Set(a.config.PerBlockReward)
 
 			if len(a.config.SelfVoteSigners) > 0 {
 				for i := 0; i < int(a.config.MaxSignerCount); i++ {
@@ -863,11 +865,14 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 				return nil, err
 			}
 			currentHeaderExtra.SignerQueue = newSignerQueue
+
+			// update PerBlockReward
+			currentHeaderExtra.PerBlockReward = new(big.Int).Set(snap.PerBlockReward)
 		}
 
 		// Accumulate any block rewards and commit the final state root
-		if err := accumulateRewards(chain.Config(), state, header, snap, refundGas); err != nil {
-			log.Trace("accumulateRewards failed, return errUnauthorized")
+		if err := accumulateRewards(chain.Config(), state, header, currentHeaderExtra.PerBlockReward); err != nil {
+			log.Trace("accumulateRewards", "failed, err", err)
 			return nil, errUnauthorized
 		}
 	} else {
@@ -1036,7 +1041,7 @@ func (a *Alien) CalcDifficulty(chain consensus.ChainReader, time uint64, parent 
 func (a *Alien) APIs(chain consensus.ChainReader) []rpc.API {
 	return []rpc.API{{
 		Namespace: "alien",
-		Version:   ufoVersion,
+		Version:   dposVersion,
 		Service:   &API{chain: chain, alien: a},
 		Public:    false,
 	}}
@@ -1055,39 +1060,19 @@ func sideChainRewards(config *params.ChainConfig, state *state.StateDB, header *
 }
 
 // AccumulateRewards credits the coinbase of the given block with the mining reward.
-func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, snap *Snapshot, refundGas RefundGas) error {
-	// Calculate the block reword by year
-	// blockNumPerYear := secondsPerYear / config.Alien.Period
-
-	// initSignerBlockReward := new(big.Int).Div(config.Alien.TotalBlockReward, big.NewInt(int64(2*blockNumPerYear)))
-	// yearCount := header.Number.Uint64() / blockNumPerYear
-	// blockReward := new(big.Int).Rsh(initSignerBlockReward, uint(yearCount))
-
-	//   := new(big.Int).Set(blockReward)
-	// minerReward.Mul(minerReward, new(big.Int).SetUint64(snap.MinerReward))
-	// minerReward.Div(minerReward, big.NewInt(1000)) // cause the reward is calculate by cnt per thousand
-	// log.Trace("accumulateRewards", "minerReward", minerReward)
-
-	// votersReward := blockReward.Sub(blockReward, minerReward)
-	// rewards for the voters
-	// voteRewardMap, err := snap.calculateVoteReward(header.Coinbase, votersReward)
-	// if err != nil {
-	// 	return err
-	// }
-	// for voter, reward := range voteRewardMap {
-	// 	state.AddBalance(voter, reward)
-	// }
-
-	// log.Trace("accumulateRewards", "voteRewardMap", voteRewardMap)
+func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, perBlockReward *big.Int) error {
+	// 如果已经出了n个块了，则新的块不再奖励
+	log.Trace("accumulateRewards", "MaxRewardOutBlock", config.Alien.MaxRewardOutBlock)
 	if header.Number.Cmp(config.Alien.MaxRewardOutBlock) > 0 {
 		return nil
 	}
 
-	log.Trace("accumulateRewards", "MaxRewardOutBlock", config.Alien.MaxRewardOutBlock)
-	log.Trace("accumulateRewards", "PerBlockReward", config.Alien.PerBlockReward)
-	blockReward := new(big.Int).Set(config.Alien.PerBlockReward)
+	blockReward := new(big.Int).Set(perBlockReward)
+	log.Trace("accumulateRewards", "PerBlockReward", perBlockReward)
 
-	log.Trace("accumulateRewards", "blockReward", blockReward)
+	if blockReward.Cmp(common.Big0) <= 0 {
+		return nil
+	}
 
 	minerReward := new(big.Int).Mul(blockReward, config.Alien.MinerRewardRatio)
 	minerReward.Div(minerReward, big.NewInt(100))
@@ -1096,25 +1081,8 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 	luckyDrawReward := blockReward.Sub(blockReward, minerReward)
 	log.Trace("accumulateRewards", "luckyDrawReward", luckyDrawReward)
 
-	// calculate for proposal refund
-	// for proposer, refund := range snap.calculateProposalRefund() {
-	// 	state.AddBalance(proposer, refund)
-	// }
-
-	// scReward, minerLeft := snap.calculateSCReward(minerReward)
-	// minerReward.Set(minerLeft)
-	// rewards for the side chain coinbase
-	// for scCoinbase, reward := range scReward {
-	// 	state.AddBalance(scCoinbase, reward)
-	// }
-	// refund gas for custom txs
-	// for sender, gas := range refundGas {
-	// 	state.AddBalance(sender, gas)
-	// 	minerReward.Sub(minerReward, gas)
-	// }
-
 	// rewards for the miner, check minerReward value for refund gas
-	if minerReward.Cmp(big.NewInt(0)) > 0 {
+	if minerReward.Cmp(common.Big0) > 0 {
 		state.AddBalance(header.Coinbase, minerReward)
 		state.AddBalance(config.Alien.LuckyDrawAddress, luckyDrawReward)
 	}
@@ -1124,7 +1092,6 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 
 // Get the signer missing from last signer till header.Coinbase
 func getSignerMissing(lastSigner common.Address, currentSigner common.Address, extra HeaderExtra, newLoop bool) []common.Address {
-
 	var signerMissing []common.Address
 
 	if newLoop {
