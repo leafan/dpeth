@@ -55,7 +55,7 @@ const (
 	ufoAdminDelSigner   = "dels"
 	ufoAdminModifyAdmin = "modadmin"
 
-	ufoMinSplitLen        = 3
+	ufoMinSplitLen        = 4
 	posPrefix             = 0
 	posVersion            = 1
 	posCategory           = 2

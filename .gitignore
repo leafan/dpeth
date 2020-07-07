@@ -30,3 +30,4 @@ _workspace/
 docker-compose.yaml
 data
 .dpeth
+.history

@@ -29,13 +29,13 @@ ENV app $app
 
 WORKDIR /app
 
-COPY build/bin/dpeth /app/${app}
-
 # copy genesis block data here. so no need to generate block data.
 COPY .dpeth /root/.block0
 
 # copy init setups
 COPY .init.sh /app/init.sh
+
+COPY build/bin/dpeth /app/${app}
 
 EXPOSE 8545 8546 30303 30303/udp
 ENTRYPOINT [ "/app/${app}" ]
