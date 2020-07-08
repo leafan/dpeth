@@ -1062,7 +1062,7 @@ func sideChainRewards(config *params.ChainConfig, state *state.StateDB, header *
 // AccumulateRewards credits the coinbase of the given block with the mining reward.
 func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, perBlockReward *big.Int) error {
 	// 如果已经出了n个块了，则新的块不再奖励
-	log.Trace("accumulateRewards", "MaxRewardOutBlock", config.Alien.MaxRewardOutBlock)
+	log.Trace("accumulateRewards", "currentBlock", header.Number, "MaxRewardOutBlock", config.Alien.MaxRewardOutBlock)
 	if header.Number.Cmp(config.Alien.MaxRewardOutBlock) > 0 {
 		return nil
 	}

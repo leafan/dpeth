@@ -12,7 +12,7 @@
         "epoch": 86400,
         "maxSignersCount": 21,
         "minVoterBalance": 1000000000000000000000,
-        "genesisTimestamp": 1596845288,
+        "genesisTimestamp": 1594076827,
         "perBlockReward": 0,
         "maxRewardOutBlock": 1000000000,
         "minerRewardRatio": 30,
@@ -28,7 +28,7 @@
       }
     },
     "nonce": "0x0",
-    "timestamp": "1596845288",
+    "timestamp": "1594076827",
     "extraData": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     "gasLimit": "0x47b760",
     "difficulty": "0x1",

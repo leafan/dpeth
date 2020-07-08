@@ -146,7 +146,6 @@ type Snapshot struct {
 	SCRewardMap      map[common.Hash]*SCReward                         `json:"sideChainReward"`   // main chain record Side Chain Reward
 	SCNoticeMap      map[common.Hash]*CCNotice                         `json:"sideChainNotice"`   // main chain record Notification to side chain
 	LocalNotice      *CCNotice                                         `json:"localNotice"`       // side chain record Notification
-	MinerReward      uint64                                            `json:"minerReward"`       // miner reward per thousand
 	MinVB            *big.Int                                          `json:"minVoterBalance"`   // min voter balance
 }
 
@@ -181,7 +180,6 @@ func newSnapshot(config *params.AlienConfig, sigcache *lru.ARCCache, hash common
 		SCNoticeMap:      make(map[common.Hash]*CCNotice),
 		LocalNotice:      &CCNotice{CurrentCharging: make(map[common.Hash]GasCharging), ConfirmReceived: make(map[common.Hash]NoticeCR)},
 		ProposalRefund:   make(map[uint64]map[common.Address]*big.Int),
-		MinerReward:      minerRewardPerThousand,
 		MinVB:            config.MinVoterBalance,
 		PerBlockReward:   config.PerBlockReward,
 	}
@@ -232,11 +230,6 @@ func loadSnapshot(config *params.AlienConfig, sigcache *lru.ARCCache, db ethdb.D
 	snap.config = config
 	snap.sigcache = sigcache
 
-	// miner reward per thousand proposal must larger than 0
-	// so minerReward is zeron only when update the program
-	if snap.MinerReward == 0 {
-		snap.MinerReward = minerRewardPerThousand
-	}
 	if snap.MinVB == nil {
 		snap.MinVB = new(big.Int).Set(minVoterBalance)
 	}
@@ -287,7 +280,6 @@ func (s *Snapshot) copy() *Snapshot {
 		LocalNotice:    &CCNotice{CurrentCharging: make(map[common.Hash]GasCharging), ConfirmReceived: make(map[common.Hash]NoticeCR)},
 		ProposalRefund: make(map[uint64]map[common.Address]*big.Int),
 
-		MinerReward:    s.MinerReward,
 		MinVB:          nil,
 		PerBlockReward: s.PerBlockReward,
 	}
@@ -391,11 +383,7 @@ func (s *Snapshot) copy() *Snapshot {
 			cpy.ProposalRefund[number][proposer] = new(big.Int).Set(deposit)
 		}
 	}
-	// miner reward per thousand proposal must larger than 0
-	// so minerReward is zeron only when update the program
-	if s.MinerReward == 0 {
-		cpy.MinerReward = minerRewardPerThousand
-	}
+
 	if s.MinVB == nil {
 		cpy.MinVB = new(big.Int).Set(minVoterBalance)
 	} else {
@@ -921,7 +909,6 @@ func (s *Snapshot) calculateProposalResult(headerNumber *big.Int) {
 						delete(s.Candidates, proposal.TargetAddress)
 					}
 				case proposalTypeMinerRewardDistributionModify:
-					s.MinerReward = s.Proposals[hashKey].MinerRewardPerThousand
 
 				case proposalTypeSideChainAdd:
 					if _, ok := s.SCRecordMap[proposal.SCHash]; !ok {
@@ -1278,63 +1265,4 @@ func (s *Snapshot) calculateGasCharging() map[common.Address]*big.Int {
 		}
 	}
 	return gasCharge
-}
-
-func (s *Snapshot) calculateSCReward(minerReward *big.Int) (map[common.Address]*big.Int, *big.Int) {
-
-	minerLeft := new(big.Int).Set(minerReward)
-	scRewardAll := new(big.Int).Set(minerReward)
-	scRewards := make(map[common.Address]*big.Int)
-
-	// need to deal with sum of record.RewardPerPeriod for all side chain is larger than 100% situation
-	scRewardMilliSum := uint64(0)
-	for _, record := range s.SCRecordMap {
-		scRewardMilliSum += record.RewardPerPeriod
-	}
-
-	if scRewardMilliSum > 0 && scRewardMilliSum < 1000 {
-		scRewardAll.Mul(scRewardAll, new(big.Int).SetUint64(scRewardMilliSum))
-		scRewardAll.Div(scRewardAll, big.NewInt(1000))
-		minerLeft.Sub(minerLeft, scRewardAll)
-		scRewardMilliSum = 1000
-	} else if scRewardMilliSum >= 1000 {
-		minerLeft.SetUint64(0)
-	} else {
-		scRewardAll.SetUint64(0)
-		scRewardMilliSum = 1000
-	}
-
-	for scHash := range s.SCRewardMap {
-		// check reward for the block number is exist
-		if reward, ok := s.SCRewardMap[scHash].SCBlockRewardMap[s.Number-scRewardDelayLoopCount*s.config.MaxSignerCount]; ok {
-			// check confirm is exist, to get countPerPeriod and rewardPerPeriod
-			if confirmation, ok := s.SCRecordMap[scHash]; ok {
-				// calculate the rent still not reach on this side chain
-				scRentSumPerPeriod := big.NewInt(0)
-				for _, rent := range confirmation.RentReward {
-					if rent.MaxRewardNumber.Uint64() >= s.Number-scRewardDelayLoopCount*s.config.MaxSignerCount {
-						scRentSumPerPeriod.Add(scRentSumPerPeriod, rent.RentPerPeriod)
-					}
-				}
-
-				// calculate the side chain reward base on score/100 and record.RewardPerPeriod
-				for addr, score := range reward.RewardScoreMap {
-					singleReward := new(big.Int).Set(scRewardAll)
-					singleReward.Mul(singleReward, new(big.Int).SetUint64(confirmation.RewardPerPeriod))
-					singleReward.Div(singleReward, new(big.Int).SetUint64(scRewardMilliSum))
-					singleReward.Add(singleReward, scRentSumPerPeriod)
-					singleReward.Mul(singleReward, new(big.Int).SetUint64(score))
-					singleReward.Div(singleReward, new(big.Int).SetUint64(100)) // for score/100
-
-					if _, ok := scRewards[addr]; ok {
-						scRewards[addr].Add(scRewards[addr], singleReward)
-					} else {
-						scRewards[addr] = singleReward
-					}
-				}
-			}
-		}
-	}
-	return scRewards, minerLeft
-
 }

@@ -580,7 +580,7 @@ func (a *Alien) processAdminPerBlockReward(txDataInfo []string) *big.Int {
 	newPerBlockReward := new(big.Int)
 	newPerBlockReward, success := newPerBlockReward.SetString(txDataInfo[posAdminEventBlockReward], 10)
 	if success == true {
-		log.Trace("processAdminPerBlockReward", "newPerBlockReward", newPerBlockReward)
+		log.Trace("processAdminPerBlockReward", "success, newPerBlockReward", newPerBlockReward)
 		return newPerBlockReward
 	} else {
 		log.Warn("processAdminPerBlockReward", "err, txDataInfo[txDataInfo[posAdminEventBlockReward]]", txDataInfo[posAdminEventBlockReward])
