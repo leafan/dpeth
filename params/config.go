@@ -208,7 +208,7 @@ type AlienConfig struct {
 	GenesisTimestamp  uint64                     `json:"genesisTimestamp"` // The LoopStartTime of first Block
 	MaxRewardOutBlock *big.Int                   `json:"maxRewardOutBlock"`
 	PerBlockReward    *big.Int                   `json:"perBlockReward"`
-	MinerRewardRatio  *big.Int                   `json:"minerRewardRatio"`
+	MinerRewardRatio  uint64                     `json:"minerRewardRatio"`
 	AdminAddress      common.Address             `json:"adminAddress"`
 	LuckyDrawAddress  common.Address             `json:"luckyDrawAddress"`
 	SelfVoteSigners   []common.UnprefixedAddress `json:"signers"`   // Signers vote by themselves to seal the block, make sure the signer accounts are pre-funded

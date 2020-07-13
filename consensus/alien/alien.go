@@ -797,6 +797,7 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 		currentHeaderExtra.LoopStartTime = parentHeaderExtra.LoopStartTime
 		currentHeaderExtra.SignerAdmin = parentHeaderExtra.SignerAdmin
 		currentHeaderExtra.PerBlockReward = new(big.Int).Set(parentHeaderExtra.PerBlockReward)
+		currentHeaderExtra.MinerRewardRatio = parentHeaderExtra.MinerRewardRatio
 
 		if a.config.IsTrantor(header.Number) {
 			var grandParentHeaderExtra HeaderExtra
@@ -840,6 +841,7 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 			currentHeaderExtra.LoopStartTime = a.config.GenesisTimestamp
 			currentHeaderExtra.SignerAdmin = a.config.AdminAddress
 			currentHeaderExtra.PerBlockReward = new(big.Int).Set(a.config.PerBlockReward)
+			currentHeaderExtra.MinerRewardRatio = a.config.MinerRewardRatio
 
 			if len(a.config.SelfVoteSigners) > 0 {
 				for i := 0; i < int(a.config.MaxSignerCount); i++ {
@@ -865,13 +867,10 @@ func (a *Alien) Finalize(chain consensus.ChainReader, header *types.Header, stat
 				return nil, err
 			}
 			currentHeaderExtra.SignerQueue = newSignerQueue
-
-			// update PerBlockReward
-			currentHeaderExtra.PerBlockReward = new(big.Int).Set(snap.PerBlockReward)
 		}
 
 		// Accumulate any block rewards and commit the final state root
-		if err := accumulateRewards(chain.Config(), state, header, currentHeaderExtra.PerBlockReward); err != nil {
+		if err := accumulateRewards(chain.Config(), state, header, currentHeaderExtra.PerBlockReward, currentHeaderExtra.MinerRewardRatio); err != nil {
 			log.Trace("accumulateRewards", "failed, err", err)
 			return nil, errUnauthorized
 		}
@@ -1060,7 +1059,7 @@ func sideChainRewards(config *params.ChainConfig, state *state.StateDB, header *
 }
 
 // AccumulateRewards credits the coinbase of the given block with the mining reward.
-func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, perBlockReward *big.Int) error {
+func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, perBlockReward *big.Int, minerRewardRatio uint64) error {
 	// 如果已经出了n个块了，则新的块不再奖励
 	log.Trace("accumulateRewards", "currentBlock", header.Number, "MaxRewardOutBlock", config.Alien.MaxRewardOutBlock)
 	if header.Number.Cmp(config.Alien.MaxRewardOutBlock) > 0 {
@@ -1074,7 +1073,8 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 		return nil
 	}
 
-	minerReward := new(big.Int).Mul(blockReward, config.Alien.MinerRewardRatio)
+	minerRatio := new(big.Int).SetUint64(minerRewardRatio)
+	minerReward := new(big.Int).Mul(blockReward, minerRatio)
 	minerReward.Div(minerReward, big.NewInt(100))
 	log.Trace("accumulateRewards", "minerReward", minerReward)
 

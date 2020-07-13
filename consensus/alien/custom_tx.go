@@ -61,6 +61,9 @@ const (
 	// 修改出块节点每个block的奖励数目
 	dposAdminModifyMinerReward = "modreward"
 
+	// 修改出块节点与LuckyPool的分配比例
+	dposAdminModifyMinerRatio = "modratio"
+
 	dposMinSplitLen       = 4
 	posPrefix             = 0
 	posVersion            = 1
@@ -74,6 +77,7 @@ const (
 
 	posAdminEvent            = 3
 	posAdminEventBlockReward = 4
+	posAdminEventMinerRatio  = 4
 
 	/*
 	 *  proposal type
@@ -244,6 +248,7 @@ type HeaderExtra struct {
 	CandidateSigners          []common.Address // candidate signers, it's a duplicate info for signerqueue.
 	SignerAdmin               common.Address   // the admin of managing signers, can be transfered if needed.
 	PerBlockReward            *big.Int         // block reward for this return, could be modified every 21 blocks.
+	MinerRewardRatio          uint64           // block reword ratio for miners
 	SignerMissing             []common.Address
 	ConfirmedBlockNumber      uint64
 	SideChainConfirmations    []SCConfirmation
@@ -335,6 +340,11 @@ func (a *Alien) processCustomTx(headerExtra HeaderExtra, chain consensus.ChainRe
 									newPerBlockReward := a.processAdminPerBlockReward(txDataInfo)
 									if newPerBlockReward != nil {
 										headerExtra.PerBlockReward = newPerBlockReward
+									}
+								} else if txDataInfo[posAdminEvent] == dposAdminModifyMinerRatio {
+									newMinerRatio := a.processAdminMinerRatio(txDataInfo)
+									if newMinerRatio >= 0 {
+										headerExtra.MinerRewardRatio = uint64(newMinerRatio)
 									}
 								}
 							} else {
@@ -587,6 +597,23 @@ func (a *Alien) processAdminPerBlockReward(txDataInfo []string) *big.Int {
 	}
 
 	return nil
+}
+
+// format: dpos:1:admin:modratio:40
+// ratio表示miner出块节点比例，剩余比例为lucky pool的
+func (a *Alien) processAdminMinerRatio(txDataInfo []string) int64 {
+	if len(txDataInfo) <= dposMinSplitLen {
+		return -1
+	}
+
+	newMinerRatio, err := strconv.Atoi(txDataInfo[posAdminEventMinerRatio])
+	if err != nil || newMinerRatio < 0 {
+		log.Warn("processAdminMinerRatio", "err here, err", err, "newMinerRatio", newMinerRatio)
+		return -1
+	}
+
+	log.Trace("processAdminMinerRatio", "success, newMinerRatio", newMinerRatio)
+	return int64(newMinerRatio)
 }
 
 // format: dpos:1:admin:add:{address}
